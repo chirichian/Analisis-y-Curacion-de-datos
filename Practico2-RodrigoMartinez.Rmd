@@ -1,0 +1,124 @@
+---
+title: "Practico2"
+output: pdf_document
+---
+
+
+```{r}
+install.packages("caret")
+install.packages("class")
+library(caret)
+library(class)
+
+```
+
+#Cargamos el dataset con el que trabajaremos
+#las notas de estudiantes y la correspondiente performance
+
+```{r}
+student <- read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRDJHUtt4Arw2C2DJLkk_OR7dXL9ogpfHOARjQOG7prOJDZX7Ll7o_xLUtSzXUN7yk6jb5ZP9Y62BbW/pub?gid=70570095&single=true&output=csv")
+```
+
+
+#Estandarizamos los valores agregandolos en columnas posteriores con el mismo nombre +.z
+
+
+```{r}
+student$SAT.z <-scale(student$SAT)
+student$GPA.z <-scale(student$GPA)
+student$Projects.z <-scale(student$Projects)
+student$Community.z <-scale(student$Community)
+student$Income.z <-scale(student$Income)
+```
+
+#Definimos la semilla para obtener los mismos resultados
+```{r}
+set.seed(2018)
+```
+
+
+#armamos los datos de entrenamiento y validacion y testing
+#para la particion haremos el 50% para entrenamiento 25 de validacion y 25 de testing
+#
+
+```{r}
+t.ids <- createDataPartition(student$Perf, p=0.5, list=F)
+train <- student[t.ids,]
+temp<-student[-t.ids,]
+```
+#ahora particionamos el temporal al %50
+
+```{r}
+v.ids <- createDataPartition(temp$Perf, p=0.5, list=F)
+
+val <- temp[v.ids,]
+test <- temp[-v.ids,]
+
+```
+#Realizamos la prediccion con KNN 
+#knn(datos de entrenamiento para predecir, los conjuntos de validacion de 1:5, tomando como variable de eleccion la columna 6, con un k=1)
+#con la k definimos que vecino elige
+```{r}
+pred1 <-knn(train[,1:5], val[,1:5], train[,6], k=1)
+
+## Armamos una tabla
+
+errmat1<-table(val$Perf,pred1, dnn=c("Actual", "Predict"))
+errmat1
+```
+
+
+# En la siguiente funcion haremos una iteracion de k para poder hacer una lectura de cada matri obtenida para la decision
+```{r}
+
+
+knn.automatic <- function(train.pred, val.pred, train.target, val.target, start_k, end_k){
+  for(k in start_k:end_k){
+    pred <- knn(train.pred, val.pred,train.target, k )
+    tab<- table(val.target, pred, dnn= c("Actual", "Predichos"))
+    cat(paste("Matriz de confusión para k= ",k ,"\n"))
+    cat("===========================================\n")
+    print(tab)
+    cat("--------------------------------------------\n")
+}
+  }
+  
+```
+
+
+#Como son muchos los valores podemos utilizar un proceso automatico para la seleccion de la k mas óptima
+
+```{r}
+
+valores <- expand.grid(k = seq(3, 500, 5)) 
+
+# Define los detalles del método de validación cruzada o remuestreo a utilizar
+ajustes <- trainControl(method='repeatedcv',  # validación cruzada
+             number = 10)  # diez submuestras
+
+
+# Aplica el método seleccionando el valor óptimo de k
+knn.datos <- train(Perf ~ SAT.z + GPA.z + Projects.z + Community.z + Income.z, data=train,
+      method = 'knn',
+      tuneGrid = valores,
+      trControl = ajustes)
+knn.datos
+
+
+```
+
+#Obtenemos que la k mas óptima es la 78 con un %57,37 de probabilidad de acertar  
+
+
+
+```{r}
+knn.datos <- train(Perf ~ SAT + GPA + Projects + Community + Income, data=train,
+      method = 'knn',
+      tuneGrid = valores,
+      trControl = ajustes)
+knn.datos
+
+```
+
+#si realizamos la misma prueba pero con los valores sin normalizar obtenemos un resultado diferente, por ejemplo selecciona la k = 93 y tenemos un porcentaje de aciertos menor %53,47
+

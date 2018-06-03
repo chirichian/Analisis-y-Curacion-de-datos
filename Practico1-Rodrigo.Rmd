@@ -1,0 +1,117 @@
+---
+title: "practico1"
+output: html_document
+---
+
+COMENZAMOS CARGANDO LOS DATOS DE VUELOS
+
+```{r}
+install.packages("nycflights13")
+library(nycflights13)
+fligths<-nycflights13::flights
+fligths
+```
+
+
+#Ejercicios. Encontrar los vuelos que:
+
+I Que arribaron con un retraso de mas de dos horas.
+
+
+```{r}
+
+#borramos los datos NA de las columnas arr_time y sche_arr_time
+
+fligths.cleaned <- fligths[!is.na(fligths$arr_time & fligths$sched_arr_time),]
+
+
+summary(fligths.cleaned)
+
+#Con la funcion apply restamos las columnas de schedule arr y la de arr time para obtener el delay de los campos NA's, y los asignamos a una columna nueva llamada prueba
+
+fligths.cleaned$prueba<-apply(fligths.cleaned[,8:7],1,diff)
+
+
+
+#reemplazamos los valores obtenidos de la operacion anterior en arrdelay
+
+fligths.cleaned$arr_delay<-ifelse(is.na(fligths.cleaned$arr_delay),fligths.cleaned$prueba,fligths.cleaned$arr_delay)
+
+#Filtramos la condicion de mayores a 2 horas y los contamos con la funcion length
+
+fligths.delay <- fligths.cleaned[fligths.cleaned$arr_delay>200,]
+length(fligths.delay$arr_delay)
+
+```
+3221 son los vuelos que llegaron con un atraso mayor a 2 horas
+
+
+
+I Volaron hacia Houston (IAH o HOU)
+
+
+```{r}
+fligths.count<-fligths[fligths$dest=="IAH"|fligths$dest=="HOU",]
+
+length(fligths.count$dest)
+
+```
+9313 son la cantidad de vuelos hacia IAH o HOU
+
+
+
+
+I Fueron operados por United, American o Delta.
+
+```{r}
+
+fligths.airline<- fligths[fligths$carrier=="AA" | fligths$carrier=="UA" |fligths$carrier=="DL",]
+
+length(fligths.airline$carrier)
+```
+139594 son operados por AA, UA o DL
+
+
+I Salieron en Verano (Julio, Agosto y Septiembre)
+```{r}
+fligths.month<- fligths[fligths$month=="7" | fligths$month=="8" |fligths$month=="9",]
+
+length(fligths.month$month)
+
+```
+86326 salieron durante verano
+
+
+I Arrivaron mas de dos horas tarde, pero salieron bien.
+
+```{r}
+#Usamos el df creado anteriormente fligths.delay que contiene la cantidad de vuelos que arrivaron 2 horas mas tarde
+
+
+fligths.delay.departure <- fligths.delay[fligths.delay$dep_time == fligths.delay$sched_dep_time, ]
+length(fligths.delay.departure$arr_delay)
+
+```
+18 vuelos son los que arribaron dos horas mas tard pero salieron a tiempo
+
+
+
+I Salieron entre medianoche y las 6 am.
+
+```{r}
+fligths.departure.midnight<- fligths[fligths$dep_time<600 & !is.na(fligths$dep_time),]
+
+
+length(fligths.departure.midnight$dep_time)
+```
+
+8730 son los vuelos que salieron entre medianoche y 6 am
+
+
+
+
+
+
+
+
+
